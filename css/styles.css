@@ -319,3 +319,81 @@ tbody tr:hover {
     justify-content: center;
     align-items: center;
 }
+
+/* =========================================
+   RESPONSIVIDADE (VERSÃO MOBILE E TABLETS)
+   ========================================= */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+    }
+
+    /* Cabeçalho: Logo e Títulos centralizados */
+    .top-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 15px;
+    }
+
+    .branding {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    /* Filtros e Botões: Um embaixo do outro ocupando 100% da tela */
+    .actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .filter-select, #searchInput, .btn-refresh {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Faixa de Resumo: KPIs e Gráfico empilhados */
+    .dashboard-summary {
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    .kpi-cards {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .kpi-card {
+        width: 100%;
+        max-width: 100% !important;
+    }
+
+    .chart-container {
+        width: 100%;
+        margin-top: 15px;
+        height: 180px; /* Dá um pouco mais de espaço pro gráfico no celular */
+    }
+
+    /* Paginação: Ajuste dos botões para não quebrarem a tela */
+    .pagination-container {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .page-jump {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        margin-top: 10px;
+        width: 100%;
+        justify-content: center;
+    }
+}
