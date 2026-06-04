@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gerenciamento - OSMC Hemobrás</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="top-header">
+            <div class="branding">
+                <img src="MARCA_HEMOBRÁS_vertical_(1).png" alt="Logo Hemobrás" class="logo">
+                <div class="titles">
+                    <h1>Gerenciamento OSMC</h1>
+                    <p>Ordens de Serviço de Manutenção Corretiva</p>
+                </div>
+            </div>
+            <div class="actions">
+                <select id="filterStatus" class="filter-select">
+                    <option value="">Todos os Status</option>
+                </select>
+                <select id="filterBloco" class="filter-select">
+                    <option value="">Todos os Blocos</option>
+                </select>
+                <select id="filterMotivo" class="filter-select">
+                    <option value="">Todos os Motivos</option>
+                </select>
+
+                <button id="btnRefresh" class="btn-refresh">Atualizar Dados</button>
+                <input type="text" id="searchInput" placeholder="Pesquisar OS ou Bloco..." autocomplete="off">
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="loading-state" id="loadingState">
+                <p>Sincronizando dados...</p>
+            </div>
+
+            <div class="dashboard-summary" id="dashboardSummary" style="display: none;">
+                <div class="kpi-cards" id="kpiCardsContainer">
+                    </div>
+                <div class="chart-container">
+                    <canvas id="osmcChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-wrapper" id="tableWrapper" style="display: none;">
+                <table id="dataTable">
+                    <thead id="tableHead">
+                        </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-container" id="paginationContainer" style="display: none;">
+                <span id="pageInfo" class="page-info">Mostrando 0 resultados</span>
+                <div class="pagination-controls">
+                    <button id="btnPrev" class="btn-page" disabled>Anterior</button>
+                    <span id="currentPageIndicator" class="current-page">1</span>
+                    <button id="btnNext" class="btn-page" disabled>Próximo</button>
+                    
+                    <div class="page-jump">
+                        <input type="number" id="jumpInput" min="1" placeholder="Pág...">
+                        <button id="btnJump" class="btn-jump">Ir</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
