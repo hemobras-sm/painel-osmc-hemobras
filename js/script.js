@@ -22,6 +22,7 @@ let osmcChartInstance = null;
 
 const searchInput = document.getElementById('searchInput');
 const filterStatus = document.getElementById('filterStatus');
+const filterSolicitante = document.getElementById('filterSolicitante'); // Novo elemento
 const filterBloco = document.getElementById('filterBloco');
 const filterMotivo = document.getElementById('filterMotivo');
 const btnRefresh = document.getElementById('btnRefresh');
@@ -135,11 +136,13 @@ function fetchData(isSilentUpdate = false) {
 
 function popularFiltrosDinamicos() {
     const statusSet = new Set();
+    const solicitanteSet = new Set(); // Novo conjunto para os solicitantes
     const blocoSet = new Set();
     const motivoSet = new Set();
 
     allData.forEach(row => {
         if (row[0] !== "-") statusSet.add(row[0]); 
+        if (row[2] !== "-") solicitanteSet.add(row[2]); // Índice 2 é a coluna Solicitante
         if (row[3] !== "-") blocoSet.add(row[3]); 
         if (row[9] !== "-") motivoSet.add(row[9]); 
     });
@@ -159,6 +162,7 @@ function popularFiltrosDinamicos() {
     }
 
     preencherSelect(filterStatus, statusSet);
+    preencherSelect(filterSolicitante, solicitanteSet); // Preenche o novo filtro
     preencherSelect(filterBloco, blocoSet);
     preencherSelect(filterMotivo, motivoSet);
 }
@@ -166,6 +170,7 @@ function popularFiltrosDinamicos() {
 function aplicarFiltrosGerais() {
     const searchTerm = searchInput.value.toLowerCase();
     const statusFiltro = filterStatus.value;
+    const solicitanteFiltro = filterSolicitante.value; // Captura o valor do novo filtro
     const blocoFiltro = filterBloco.value;
     const motivoFiltro = filterMotivo.value;
 
@@ -175,10 +180,12 @@ function aplicarFiltrosGerais() {
             (row[3] && row[3].toString().toLowerCase().includes(searchTerm));
             
         const passouStatus = !statusFiltro || row[0] === statusFiltro;
+        const passouSolicitante = !solicitanteFiltro || row[2] === solicitanteFiltro; // Aplica a regra na coluna 2
         const passouBloco = !blocoFiltro || row[3] === blocoFiltro;
         const passouMotivo = !motivoFiltro || row[9] === motivoFiltro;
 
-        return passouPesquisa && passouStatus && passouBloco && passouMotivo;
+        // Agora exige que o solicitante também bata com a seleção
+        return passouPesquisa && passouStatus && passouSolicitante && passouBloco && passouMotivo;
     });
 
     currentPage = 1;
@@ -198,7 +205,6 @@ function atualizarGraficoEKPIs() {
         if (status && status !== '-') {
             contagemStatus[status] = (contagemStatus[status] || 0) + 1;
             
-            // INTELIGÊNCIA ATUALIZADA: Pega Aprovado e também Concluído
             let statusMin = status.toLowerCase();
             if (statusMin.includes('aprovado') || statusMin.includes('concluído') || statusMin.includes('concluido') || statusMin.includes('resolvido')) {
                 resolvidas++;
@@ -208,7 +214,6 @@ function atualizarGraficoEKPIs() {
         }
     });
 
-    // Removi o vermelho para o gráfico não parecer um erro, coloquei cores mais neutras e corporativas
     const coresBase = ['#155724', '#004085', '#6c757d', '#d39e00', '#17a2b8', '#5a6268'];
     const labels = Object.keys(contagemStatus);
     const data = Object.values(contagemStatus);
@@ -309,7 +314,6 @@ function renderTableBody() {
             let val = cellValue ? cellValue.toString().trim() : '-';
 
             if (i === 0) {
-                // Inteligência aplicada aqui também para colorir a tabela corretamente
                 let valMin = val.toLowerCase();
                 if (valMin.includes('aprovado') || valMin.includes('concluído') || valMin.includes('concluido')) {
                     td.innerHTML = `<span style="background-color: #d4edda; color: #155724; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">${val}</span>`;
@@ -368,6 +372,7 @@ jumpInput.addEventListener('keypress', (e) => {
 
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
+filterSolicitante.addEventListener('change', aplicarFiltrosGerais); // Adicionado ouvinte pro novo filtro
 filterBloco.addEventListener('change', aplicarFiltrosGerais);
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
 
