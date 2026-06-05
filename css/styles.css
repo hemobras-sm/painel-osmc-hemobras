@@ -71,13 +71,14 @@ body {
 .actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px; /* Reduzi um pouco o espaço para caber tudo melhor */
     flex-wrap: wrap;
     justify-content: flex-end;
+    flex: 1;
 }
 
 .filter-select, #searchInput {
-    padding: 10px 14px;
+    padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-family: var(--font-main);
@@ -86,15 +87,20 @@ body {
     color: var(--text-color);
     outline: none;
     transition: all 0.2s;
+    
+    /* NOVA REGRA: Trava o tamanho máximo e deixa tudo simétrico */
+    width: 160px; 
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .filter-select {
     cursor: pointer;
-    min-width: 140px;
 }
 
 #searchInput {
-    width: 250px;
+    width: 220px; /* Barra de pesquisa com tamanho fixo */
 }
 
 .filter-select:focus, #searchInput:focus {
