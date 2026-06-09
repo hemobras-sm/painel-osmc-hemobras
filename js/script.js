@@ -1,44 +1,44 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/1IGkI1foAYcKUYWSF2jknjaqhrDwXHAuJJ_984qGwSJQ/export?format=csv&gid=1142490697";
 
 const COLUNAS_DESEJADAS = [
-    "Status",
-    "Número da OSMC",
-    "Solicitante",
-    "Bloco",
-    "Piso",
-    "Equipamento",
-    "Sala",
-    "Descrição do Problema",
-    "Observação",
-    "Motivo",
-    "Data/hora de fechamento"
+    "Status", "Número da OSMC", "Solicitante", "Bloco", "Piso",
+    "Equipamento", "Sala", "Descrição do Problema", "Observação", "Motivo", "Data/hora de fechamento"
 ];
 
 let allData = [];
 let filteredData = [];
 const rowsPerPage = 50; 
 let currentPage = 1;
+
 let osmcChartInstance = null; 
+let blocoChartInstance = null;
+let solicitanteChartInstance = null;
+
+let isTableVisible = false;
 
 const searchInput = document.getElementById('searchInput');
 const filterStatus = document.getElementById('filterStatus');
-const filterSolicitante = document.getElementById('filterSolicitante'); // Novo elemento
+const filterSolicitante = document.getElementById('filterSolicitante');
 const filterBloco = document.getElementById('filterBloco');
 const filterMotivo = document.getElementById('filterMotivo');
 const btnRefresh = document.getElementById('btnRefresh');
+
+const loadingState = document.getElementById('loadingState');
+const dashboardSummary = document.getElementById('dashboardSummary'); 
+const kpiCardsContainer = document.getElementById('kpiCardsContainer'); 
+const chartsGrid = document.getElementById('chartsGrid');
+const tableToggleContainer = document.getElementById('tableToggleContainer');
+const btnToggleTable = document.getElementById('btnToggleTable');
+const tableSection = document.getElementById('tableSection');
+
 const tableHead = document.getElementById('tableHead');
 const tableBody = document.getElementById('tableBody');
-const tableWrapper = document.getElementById('tableWrapper');
-const loadingState = document.getElementById('loadingState');
-const paginationContainer = document.getElementById('paginationContainer');
+const currentPageIndicator = document.getElementById('currentPageIndicator');
 const pageInfo = document.getElementById('pageInfo');
 const btnPrev = document.getElementById('btnPrev');
 const btnNext = document.getElementById('btnNext');
-const currentPageIndicator = document.getElementById('currentPageIndicator');
 const jumpInput = document.getElementById('jumpInput');
 const btnJump = document.getElementById('btnJump');
-const dashboardSummary = document.getElementById('dashboardSummary'); 
-const kpiCardsContainer = document.getElementById('kpiCardsContainer'); 
 
 function init() {
     Chart.register(ChartDataLabels);
@@ -48,12 +48,26 @@ function init() {
 
 btnRefresh.addEventListener('click', () => { fetchData(false); });
 
+btnToggleTable.addEventListener('click', () => {
+    isTableVisible = !isTableVisible;
+    if(isTableVisible) {
+        tableSection.style.display = 'block';
+        btnToggleTable.textContent = 'Ocultar Lista de O.S. (Detalhamento)';
+        btnToggleTable.style.backgroundColor = '#444'; 
+    } else {
+        tableSection.style.display = 'none';
+        btnToggleTable.textContent = 'Visualizar Lista de O.S. (Detalhamento)';
+        btnToggleTable.style.backgroundColor = 'var(--primary-color)'; 
+    }
+});
+
 function fetchData(isSilentUpdate = false) {
     if (!isSilentUpdate) {
         loadingState.style.display = 'block';
-        tableWrapper.style.display = 'none';
-        paginationContainer.style.display = 'none';
         dashboardSummary.style.display = 'none'; 
+        chartsGrid.style.display = 'none';
+        tableToggleContainer.style.display = 'none';
+        if(isTableVisible) tableSection.style.display = 'none';
     }
 
     Papa.parse(CSV_URL, {
@@ -97,7 +111,6 @@ function fetchData(isSilentUpdate = false) {
                 if (!row || row.length === 0 || osmcIdx === -1) continue;
 
                 let osmcVal = row[osmcIdx] ? row[osmcIdx].toString().trim() : "";
-                
                 let statusVal = (statusIdx !== -1 && row[statusIdx]) ? row[statusIdx].toString().trim() : "";
                 let statusValido = statusVal !== "" && statusVal !== "-"; 
                 
@@ -121,28 +134,23 @@ function fetchData(isSilentUpdate = false) {
             renderTableHeaders();
             
             loadingState.style.display = 'none';
-            tableWrapper.style.display = 'block';
-            paginationContainer.style.display = 'flex';
             dashboardSummary.style.display = 'flex'; 
-        },
-        error: function(err) {
-            console.error("Erro na leitura do CSV:", err);
-            if (!isSilentUpdate) {
-                loadingState.innerHTML = '<span style="color:red">Erro de comunicação com a planilha.</span>';
-            }
+            chartsGrid.style.display = 'grid';
+            tableToggleContainer.style.display = 'block';
+            if(isTableVisible) tableSection.style.display = 'block';
         }
     });
 }
 
 function popularFiltrosDinamicos() {
     const statusSet = new Set();
-    const solicitanteSet = new Set(); // Novo conjunto para os solicitantes
+    const solicitanteSet = new Set(); 
     const blocoSet = new Set();
     const motivoSet = new Set();
 
     allData.forEach(row => {
         if (row[0] !== "-") statusSet.add(row[0]); 
-        if (row[2] !== "-") solicitanteSet.add(row[2]); // Índice 2 é a coluna Solicitante
+        if (row[2] !== "-") solicitanteSet.add(row[2]); 
         if (row[3] !== "-") blocoSet.add(row[3]); 
         if (row[9] !== "-") motivoSet.add(row[9]); 
     });
@@ -162,7 +170,7 @@ function popularFiltrosDinamicos() {
     }
 
     preencherSelect(filterStatus, statusSet);
-    preencherSelect(filterSolicitante, solicitanteSet); // Preenche o novo filtro
+    preencherSelect(filterSolicitante, solicitanteSet); 
     preencherSelect(filterBloco, blocoSet);
     preencherSelect(filterMotivo, motivoSet);
 }
@@ -170,21 +178,22 @@ function popularFiltrosDinamicos() {
 function aplicarFiltrosGerais() {
     const searchTerm = searchInput.value.toLowerCase();
     const statusFiltro = filterStatus.value;
-    const solicitanteFiltro = filterSolicitante.value; // Captura o valor do novo filtro
+    const solicitanteFiltro = filterSolicitante.value; 
     const blocoFiltro = filterBloco.value;
     const motivoFiltro = filterMotivo.value;
 
     filteredData = allData.filter(row => {
+        // AGORA PESQUISA TAMBÉM NO EQUIPAMENTO (row[5])
         const passouPesquisa = !searchTerm || 
             (row[1] && row[1].toString().toLowerCase().includes(searchTerm)) || 
-            (row[3] && row[3].toString().toLowerCase().includes(searchTerm));
+            (row[3] && row[3].toString().toLowerCase().includes(searchTerm)) ||
+            (row[5] && row[5].toString().toLowerCase().includes(searchTerm));
             
         const passouStatus = !statusFiltro || row[0] === statusFiltro;
-        const passouSolicitante = !solicitanteFiltro || row[2] === solicitanteFiltro; // Aplica a regra na coluna 2
+        const passouSolicitante = !solicitanteFiltro || row[2] === solicitanteFiltro; 
         const passouBloco = !blocoFiltro || row[3] === blocoFiltro;
         const passouMotivo = !motivoFiltro || row[9] === motivoFiltro;
 
-        // Agora exige que o solicitante também bata com a seleção
         return passouPesquisa && passouStatus && passouSolicitante && passouBloco && passouMotivo;
     });
 
@@ -192,10 +201,30 @@ function aplicarFiltrosGerais() {
     renderTableBody();
     updatePagination();
     
-    atualizarGraficoEKPIs(); 
+    atualizarDashboards(); 
 }
 
-function atualizarGraficoEKPIs() {
+function getTopNData(dataArray, colIndex, topN) {
+    const counts = {};
+    dataArray.forEach(row => {
+        let val = row[colIndex] ? row[colIndex].toString().trim() : '';
+        if (val && val !== '-' && val.toLowerCase() !== 'n/a') {
+            counts[val] = (counts[val] || 0) + 1;
+        }
+    });
+
+    const sorted = Object.keys(counts)
+        .map(key => ({ label: key, count: counts[key] }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, topN);
+
+    return {
+        labels: sorted.map(item => item.label),
+        data: sorted.map(item => item.count)
+    };
+}
+
+function atualizarDashboards() {
     const contagemStatus = {};
     let resolvidas = 0;
     let pendentes = 0;
@@ -204,7 +233,6 @@ function atualizarGraficoEKPIs() {
         let status = row[0] ? row[0].toString().trim() : '';
         if (status && status !== '-') {
             contagemStatus[status] = (contagemStatus[status] || 0) + 1;
-            
             let statusMin = status.toLowerCase();
             if (statusMin.includes('aprovado') || statusMin.includes('concluído') || statusMin.includes('concluido') || statusMin.includes('resolvido')) {
                 resolvidas++;
@@ -213,10 +241,6 @@ function atualizarGraficoEKPIs() {
             }
         }
     });
-
-    const coresBase = ['#155724', '#004085', '#6c757d', '#d39e00', '#17a2b8', '#5a6268'];
-    const labels = Object.keys(contagemStatus);
-    const data = Object.values(contagemStatus);
 
     kpiCardsContainer.innerHTML = `
         <div class="kpi-card" style="border-left-color: var(--primary-color);">
@@ -233,58 +257,89 @@ function atualizarGraficoEKPIs() {
         </div>
     `;
 
-    const ctx = document.getElementById('osmcChart').getContext('2d');
-    const coresGrafico = labels.map((_, i) => coresBase[i % coresBase.length]);
+    const pieDataLabels = {
+        color: '#444444',
+        anchor: 'end',
+        align: 'end',
+        offset: 4,
+        font: { weight: 'bold', size: 11, family: "'Inter', sans-serif" },
+        formatter: (value, context) => {
+            let sum = 0;
+            let dataArr = context.chart.data.datasets[0].data;
+            dataArr.forEach(data => { sum += data; });
+            return value > 0 ? (value * 100 / sum).toFixed(0) + "%" : null;
+        }
+    };
+
+    const coresBase = ['#155724', '#004085', '#8A151B', '#d39e00', '#6c757d', '#17a2b8', '#343a40', '#28a745'];
+
+    // GRÁFICO 1: Status
+    const statusLabels = Object.keys(contagemStatus);
+    const statusData = Object.values(contagemStatus);
+    const ctxStatus = document.getElementById('osmcChart').getContext('2d');
     
     if (osmcChartInstance) {
-        osmcChartInstance.data.labels = labels;
-        osmcChartInstance.data.datasets[0].data = data;
-        osmcChartInstance.data.datasets[0].backgroundColor = coresGrafico;
+        osmcChartInstance.data.labels = statusLabels;
+        osmcChartInstance.data.datasets[0].data = statusData;
         osmcChartInstance.update();
     } else {
-        osmcChartInstance = new Chart(ctx, {
+        osmcChartInstance = new Chart(ctxStatus, {
             type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: coresGrafico,
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '55%',
-                layout: {
-                    padding: 25 
-                },
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: { boxWidth: 12, font: { size: 11, family: "'Inter', sans-serif" } }
-                    },
-                    datalabels: {
-                        color: '#444444', 
-                        anchor: 'end',    
-                        align: 'end',     
-                        offset: 4,        
-                        font: {
-                            weight: 'bold',
-                            size: 11,
-                            family: "'Inter', sans-serif"
-                        },
-                        formatter: (value, context) => {
-                            let sum = 0;
-                            let dataArr = context.chart.data.datasets[0].data;
-                            dataArr.forEach(data => { sum += data; });
-                            let percentage = (value * 100 / sum).toFixed(1) + "%";
-                            
-                            return value > 0 ? percentage : null;
-                        }
-                    }
-                }
+            data: { labels: statusLabels, datasets: [{ data: statusData, backgroundColor: coresBase, borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, layout: { padding: 25 }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } }, datalabels: pieDataLabels } }
+        });
+    }
+
+    // GRÁFICO 2: Top 5 Blocos
+    const blocoStats = getTopNData(filteredData, 3, 5);
+    const ctxBloco = document.getElementById('blocoChart').getContext('2d');
+    
+    if (blocoChartInstance) {
+        blocoChartInstance.data.labels = blocoStats.labels;
+        blocoChartInstance.data.datasets[0].data = blocoStats.data;
+        blocoChartInstance.update();
+    } else {
+        blocoChartInstance = new Chart(ctxBloco, {
+            type: 'bar',
+            data: { labels: blocoStats.labels, datasets: [{ label: 'Qtd de OSMC', data: blocoStats.data, backgroundColor: '#004085' }] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                layout: { padding: { top: 25 } }, 
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: { color: '#444', anchor: 'end', align: 'end', offset: 4, font: { weight: 'bold', size: 11 } } 
+                }, 
+                scales: { y: { beginAtZero: true } } 
+            }
+        });
+    }
+
+    // GRÁFICO 3: Top 5 Solicitantes
+    const solStats = getTopNData(filteredData, 2, 5);
+    const ctxSol = document.getElementById('solicitanteChart').getContext('2d');
+    
+    if (solicitanteChartInstance) {
+        solicitanteChartInstance.data.labels = solStats.labels;
+        solicitanteChartInstance.data.datasets[0].data = solStats.data;
+        solicitanteChartInstance.update();
+    } else {
+        solicitanteChartInstance = new Chart(ctxSol, {
+            type: 'bar',
+            data: { labels: solStats.labels, datasets: [{ label: 'Qtd de OSMC', data: solStats.data, backgroundColor: '#8A151B' }] },
+            options: { 
+                indexAxis: 'y', 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                layout: { padding: { right: 40 } }, 
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: { color: '#444', anchor: 'end', align: 'end', offset: 4, font: { weight: 'bold', size: 11 } } 
+                }, 
+                scales: { 
+                    x: { beginAtZero: true },
+                    y: { ticks: { autoSkip: false, font: { size: 11 } } } 
+                } 
             }
         });
     }
@@ -352,7 +407,6 @@ function changePage(delta) {
 function jumpToPage() {
     const page = parseInt(jumpInput.value);
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-    
     if (page >= 1 && page <= totalPages) {
         currentPage = page;
         renderTableBody();
@@ -366,13 +420,11 @@ function jumpToPage() {
 btnPrev.addEventListener('click', () => changePage(-1));
 btnNext.addEventListener('click', () => changePage(1));
 btnJump.addEventListener('click', jumpToPage);
-jumpInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') jumpToPage();
-});
+jumpInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') jumpToPage(); });
 
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
-filterSolicitante.addEventListener('change', aplicarFiltrosGerais); // Adicionado ouvinte pro novo filtro
+filterSolicitante.addEventListener('change', aplicarFiltrosGerais); 
 filterBloco.addEventListener('change', aplicarFiltrosGerais);
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
 
