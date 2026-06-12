@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Gerenciamento - OSMC Hemobrás</title>
-    
     <link rel="icon" type="image/png" href="MARCA_HEMOBRÁS_vertical_(1).png">
-    
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -29,6 +27,9 @@
                 </select>
                 <select id="filterSolicitante" class="filter-select">
                     <option value="">Todos os Solicitantes</option>
+                </select>
+                <select id="filterPlanta" class="filter-select">
+                    <option value="">Todas as Plantas</option>
                 </select>
                 <select id="filterBloco" class="filter-select">
                     <option value="">Todos os Blocos</option>
@@ -61,8 +62,8 @@
                     <div class="canvas-container"><canvas id="blocoChart"></canvas></div>
                 </div>
                 <div class="chart-box">
-                    <h4>Top 5 Solicitantes</h4>
-                    <div class="canvas-container"><canvas id="solicitanteChart"></canvas></div>
+                    <h4>Distribuição por Planta</h4>
+                    <div class="canvas-container"><canvas id="plantaChart"></canvas></div>
                 </div>
             </div>
 

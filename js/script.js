@@ -1,8 +1,9 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/1IGkI1foAYcKUYWSF2jknjaqhrDwXHAuJJ_984qGwSJQ/export?format=csv&gid=1142490697";
 
+// INCLUÍDA A COLUNA "PLANTA" NO FINAL
 const COLUNAS_DESEJADAS = [
     "Status", "Número da OSMC", "Solicitante", "Bloco", "Piso",
-    "Equipamento", "Sala", "Descrição do Problema", "Observação", "Motivo", "Data/hora de fechamento"
+    "Equipamento", "Sala", "Descrição do Problema", "Observação", "Motivo", "Data/hora de fechamento", "Planta"
 ];
 
 let allData = [];
@@ -12,13 +13,14 @@ let currentPage = 1;
 
 let osmcChartInstance = null; 
 let blocoChartInstance = null;
-let solicitanteChartInstance = null;
+let plantaChartInstance = null; // Variável atualizada para a Planta
 
 let isTableVisible = false;
 
 const searchInput = document.getElementById('searchInput');
 const filterStatus = document.getElementById('filterStatus');
 const filterSolicitante = document.getElementById('filterSolicitante');
+const filterPlanta = document.getElementById('filterPlanta'); // Novo Filtro
 const filterBloco = document.getElementById('filterBloco');
 const filterMotivo = document.getElementById('filterMotivo');
 const btnRefresh = document.getElementById('btnRefresh');
@@ -145,6 +147,7 @@ function fetchData(isSilentUpdate = false) {
 function popularFiltrosDinamicos() {
     const statusSet = new Set();
     const solicitanteSet = new Set(); 
+    const plantaSet = new Set(); // Conjunto para a Planta
     const blocoSet = new Set();
     const motivoSet = new Set();
 
@@ -153,6 +156,7 @@ function popularFiltrosDinamicos() {
         if (row[2] !== "-") solicitanteSet.add(row[2]); 
         if (row[3] !== "-") blocoSet.add(row[3]); 
         if (row[9] !== "-") motivoSet.add(row[9]); 
+        if (row[11] && row[11] !== "-") plantaSet.add(row[11]); // Índice 11 é a Planta
     });
 
     function preencherSelect(selectElement, valoresSet) {
@@ -171,6 +175,7 @@ function popularFiltrosDinamicos() {
 
     preencherSelect(filterStatus, statusSet);
     preencherSelect(filterSolicitante, solicitanteSet); 
+    preencherSelect(filterPlanta, plantaSet); // Preenche o novo filtro
     preencherSelect(filterBloco, blocoSet);
     preencherSelect(filterMotivo, motivoSet);
 }
@@ -179,11 +184,11 @@ function aplicarFiltrosGerais() {
     const searchTerm = searchInput.value.toLowerCase();
     const statusFiltro = filterStatus.value;
     const solicitanteFiltro = filterSolicitante.value; 
+    const plantaFiltro = filterPlanta.value; // Captura a Planta
     const blocoFiltro = filterBloco.value;
     const motivoFiltro = filterMotivo.value;
 
     filteredData = allData.filter(row => {
-        // AGORA PESQUISA TAMBÉM NO EQUIPAMENTO (row[5])
         const passouPesquisa = !searchTerm || 
             (row[1] && row[1].toString().toLowerCase().includes(searchTerm)) || 
             (row[3] && row[3].toString().toLowerCase().includes(searchTerm)) ||
@@ -191,10 +196,11 @@ function aplicarFiltrosGerais() {
             
         const passouStatus = !statusFiltro || row[0] === statusFiltro;
         const passouSolicitante = !solicitanteFiltro || row[2] === solicitanteFiltro; 
+        const passouPlanta = !plantaFiltro || row[11] === plantaFiltro; // Regra da Planta
         const passouBloco = !blocoFiltro || row[3] === blocoFiltro;
         const passouMotivo = !motivoFiltro || row[9] === motivoFiltro;
 
-        return passouPesquisa && passouStatus && passouSolicitante && passouBloco && passouMotivo;
+        return passouPesquisa && passouStatus && passouSolicitante && passouPlanta && passouBloco && passouMotivo;
     });
 
     currentPage = 1;
@@ -315,32 +321,19 @@ function atualizarDashboards() {
         });
     }
 
-    // GRÁFICO 3: Top 5 Solicitantes
-    const solStats = getTopNData(filteredData, 2, 5);
-    const ctxSol = document.getElementById('solicitanteChart').getContext('2d');
+    // GRÁFICO 3: Planta (Configurado como Pizza)
+    const plantaStats = getTopNData(filteredData, 11, 5); // Índice 11 é a Planta
+    const ctxPlanta = document.getElementById('plantaChart').getContext('2d');
     
-    if (solicitanteChartInstance) {
-        solicitanteChartInstance.data.labels = solStats.labels;
-        solicitanteChartInstance.data.datasets[0].data = solStats.data;
-        solicitanteChartInstance.update();
+    if (plantaChartInstance) {
+        plantaChartInstance.data.labels = plantaStats.labels;
+        plantaChartInstance.data.datasets[0].data = plantaStats.data;
+        plantaChartInstance.update();
     } else {
-        solicitanteChartInstance = new Chart(ctxSol, {
-            type: 'bar',
-            data: { labels: solStats.labels, datasets: [{ label: 'Qtd de OSMC', data: solStats.data, backgroundColor: '#8A151B' }] },
-            options: { 
-                indexAxis: 'y', 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                layout: { padding: { right: 40 } }, 
-                plugins: { 
-                    legend: { display: false }, 
-                    datalabels: { color: '#444', anchor: 'end', align: 'end', offset: 4, font: { weight: 'bold', size: 11 } } 
-                }, 
-                scales: { 
-                    x: { beginAtZero: true },
-                    y: { ticks: { autoSkip: false, font: { size: 11 } } } 
-                } 
-            }
+        plantaChartInstance = new Chart(ctxPlanta, {
+            type: 'pie', // Gráfico de Pizza para diferenciar do Status (Rosca)
+            data: { labels: plantaStats.labels, datasets: [{ data: plantaStats.data, backgroundColor: coresBase.slice(1), borderWidth: 1 }] }, // slice(1) para inverter as cores
+            options: { responsive: true, maintainAspectRatio: false, layout: { padding: 25 }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } }, datalabels: pieDataLabels } }
         });
     }
 }
@@ -425,6 +418,7 @@ jumpInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') jumpToPag
 searchInput.addEventListener('input', aplicarFiltrosGerais);
 filterStatus.addEventListener('change', aplicarFiltrosGerais);
 filterSolicitante.addEventListener('change', aplicarFiltrosGerais); 
+filterPlanta.addEventListener('change', aplicarFiltrosGerais); // Gatilho do novo filtro
 filterBloco.addEventListener('change', aplicarFiltrosGerais);
 filterMotivo.addEventListener('change', aplicarFiltrosGerais);
 
